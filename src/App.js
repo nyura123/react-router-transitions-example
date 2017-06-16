@@ -202,6 +202,10 @@ class Transitioner extends Component {
     }
   }
 
+  componentWillUnmount() {
+    this.prevChildUnmountTimeout && clearTimeout(this.prevChildUnmountTimeout);
+  }
+
   render() {
     const {
       childKey,
@@ -220,6 +224,7 @@ class Transitioner extends Component {
     const aLeave =
       (prevChildKey && getAnimationLeave && getAnimationLeave(prevChildKey)) ||
       animationLeave;
+
     //gets the single child or throws
     const child = React.Children.only(children);
 

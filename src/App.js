@@ -11,9 +11,20 @@ const AnimationSlideInRight = keyframes`
   from {transform: translateX(100%);}
   to {transform: translateX(0);}
 `;
+
+const AnimationSlideInLeft = keyframes`
+  from {transform: translateX(-100%);}
+  to {transform: translateX(0);}
+`;
+
 const AnimationSlideOutLeft = keyframes`
   from {transform: translateX(0);}
   to {transform: translateX(-100%);}
+`;
+
+const AnimationZoomOutRight = keyframes`
+  from {transform: translateX(0%)}
+  to {transform: translateX(300%); transform: scale(0.1);}
 `;
 
 const BasicExample = () =>
@@ -40,11 +51,20 @@ function animatedPageKey(pathname) {
   return pathname;
 }
 
+function animationEnterForKey(key) {
+  return key === "/topics" ? AnimationSlideInLeft : AnimationSlideInRight;
+}
+
+function animationLeaveForKey(key) {
+  return key === "/" ? AnimationZoomOutRight : AnimationSlideOutLeft;
+}
+
 const Pages = ({ location }) =>
   <Transitioner
     childKey={animatedPageKey(location.pathname)}
-    animationEnter={AnimationSlideInRight}
-    animationLeave={AnimationSlideOutLeft}
+    getAnimationEnter={animationEnterForKey}
+    getAnimationLeave={animationLeaveForKey}
+    unmountPreviousTimeoutMs={450}
   >
     <Switch location={location}>
       <Route exact path="/" component={Home} />
@@ -113,16 +133,42 @@ const AnimatedDiv = styled.div`
  animation-fill-mode: both;
  `;
 
+// const AnimatedRoute = ({
+//   path,
+//   exact,
+//   animationEnter = { AnimationSlideInRight },
+//   animationLeave = { AnimationSlideOutLeft },
+//   ...rest
+// }) =>
+//   <Route
+//     path={path}
+//     excat={exact}
+//     children={({ match }) =>
+//       <Transitioner
+//         childKey={match ? match.path : "nomatch"}
+//         animationEnter={animationEnter}
+//         animationLeave={animationLeave}
+//       >
+//         <Route exact={exact} path={path} {...rest} />
+//       </Transitioner>}
+//   />;
+
 class Transitioner extends Component {
   static propTypes = {
     childKey: PropTypes.string.isRequired,
-    children: PropTypes.element.isRequired //require a single child
+    children: PropTypes.element.isRequired, //require a single child
+    getAnimationEnter: PropTypes.func,
+    getAnimationLeave: PropTypes.func,
+    animationEnter: PropTypes.element,
+    animationLeave: PropTypes.element
   };
 
   state = {
     prevChildKey: null,
     prevChild: null
   };
+
+  prevChildUnmountTimeout = null;
 
   componentWillReceiveProps(nextProps) {
     if (this.props.childKey && this.props.childKey !== nextProps.childKey) {
@@ -132,10 +178,27 @@ class Transitioner extends Component {
         " to ",
         nextProps.childKey
       );
-      this.setState({
-        prevChildKey: this.props.childKey,
-        prevChild: React.Children.only(this.props.children)
-      });
+
+      //can't know when prev child animation is done, make it 2 seconds...
+      const unmountAfterMs = this.props.unmountPreviousTimeoutMs || 2000;
+      if (this.prevChildUnmountTimeout)
+        clearTimeout(this.prevChildUnmountTimeout);
+      this.setState(
+        {
+          prevChildKey: this.props.childKey,
+          prevChild: React.Children.only(this.props.children)
+        },
+        () => {
+          this.prevChildUnmountTimeout = setTimeout(
+            () =>
+              this.setState({
+                prevChildKey: null,
+                prevChild: null
+              }),
+            unmountAfterMs
+          );
+        }
+      );
     }
   }
 
@@ -143,6 +206,8 @@ class Transitioner extends Component {
     const {
       childKey,
       children,
+      getAnimationEnter,
+      getAnimationLeave,
       animationEnter,
       animationLeave,
       animationDurationMs = ".4s"
@@ -150,6 +215,11 @@ class Transitioner extends Component {
 
     const { prevChildKey, prevChild } = this.state;
 
+    const aEnter =
+      (getAnimationEnter && getAnimationEnter(childKey)) || animationEnter;
+    const aLeave =
+      (prevChildKey && getAnimationLeave && getAnimationLeave(prevChildKey)) ||
+      animationLeave;
     //gets the single child or throws
     const child = React.Children.only(children);
 
@@ -166,7 +236,7 @@ class Transitioner extends Component {
           <AnimatedDiv
             key={prevChildKey}
             animationDuration={animationDurationMs}
-            animationName={animationLeave}
+            animationName={aLeave}
           >
             {prevChild}
           </AnimatedDiv>}
@@ -174,7 +244,7 @@ class Transitioner extends Component {
         <AnimatedDiv
           key={childKey}
           animationDuration={animationDurationMs}
-          animationName={animationEnter}
+          animationName={aEnter}
         >
           {child}
         </AnimatedDiv>

@@ -77,6 +77,7 @@ const Pages = ({ location }) =>
 const Home = () =>
   <div>
     <h2>Home</h2>
+    <input placeholder="type to make sure state is kept on animating out" />
   </div>;
 
 const About = () =>
@@ -179,16 +180,17 @@ class Transitioner extends Component {
         nextProps.childKey
       );
 
-      //can't know when prev child animation is done, make it 2 seconds...
-      const unmountAfterMs = this.props.unmountPreviousTimeoutMs || 2000;
-      if (this.prevChildUnmountTimeout)
-        clearTimeout(this.prevChildUnmountTimeout);
       this.setState(
         {
           prevChildKey: this.props.childKey,
           prevChild: React.Children.only(this.props.children)
         },
         () => {
+          //can't know when prev child animation is done, make it 2 seconds...
+          const unmountAfterMs = this.props.unmountPreviousTimeoutMs || 2000;
+          if (this.prevChildUnmountTimeout)
+            clearTimeout(this.prevChildUnmountTimeout);
+
           this.prevChildUnmountTimeout = setTimeout(
             () =>
               this.setState({

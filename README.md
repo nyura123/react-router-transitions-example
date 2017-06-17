@@ -1,7 +1,7 @@
 
 React Router page transitions css keyframe animatinos (via styled-components).
 
-[JSBin](http://jsbin.com/tuzuvitupi/edit?html,js,output)
+[JSBin](http://jsbin.com/vuyadaxeyi/edit?html,js,output)
 
 This project was bootstrapped with [Create React App](https://github.com/facebookincubator/create-react-app).
 
